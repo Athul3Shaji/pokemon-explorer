@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function HomePage() {
   const [pokemons, setPokemons] = useState([])
@@ -10,11 +11,8 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
 
-  useEffect(() => {
-    loadMore() // initial load
-  }, [])
-
-  const loadMore = async () => {
+  // ✅ Optimized loadMore with useCallback to fix missing dependency warning
+  const loadMore = useCallback(async () => {
     setLoading(true)
     const res = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=30&offset=${offset}`)
     const data = await res.json()
@@ -29,7 +27,11 @@ export default function HomePage() {
     setFiltered(updated.filter(p => p.name.includes(search)))
     setOffset(prev => prev + 30)
     setLoading(false)
-  }
+  }, [offset, pokemons, search])
+
+  useEffect(() => {
+    loadMore()
+  }, [loadMore])
 
   const handleSearch = (e) => {
     const value = e.target.value.toLowerCase()
@@ -55,12 +57,14 @@ export default function HomePage() {
         {filtered.map((pokemon) => (
           <Link key={pokemon.id} href={`/pokemon/${pokemon.name}`}>
             <div className="bg-white p-4 rounded-xl shadow hover:shadow-xl text-center cursor-pointer transition-transform duration-200 hover:scale-105">
-              <img
+              {/* ✅ Use next/image for optimization */}
+              <Image
                 src={pokemon.sprites.front_default}
                 alt={pokemon.name}
+                width={96}
+                height={96}
                 className="mx-auto transition-all duration-300 hover:scale-110"
-                onMouseOver={(e) => e.currentTarget.src = pokemon.sprites.front_shiny}
-                onMouseOut={(e) => e.currentTarget.src = pokemon.sprites.front_default}
+                unoptimized // Optional: use if external image domains aren't configured
               />
               <h2 className="mt-2 capitalize font-semibold text-lg">{pokemon.name}</h2>
               <div className="mt-2 flex justify-center gap-1 flex-wrap">
